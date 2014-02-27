@@ -31,6 +31,7 @@ chrom   start           end        stripe      pch      color
 
 Example:
 ...
+<pre>
 chr1    39411519        39413487        2       23      "#377eb8"
 chr1    46169019        46171853        2       23      "#377eb8"
 chr1    46176404        46178211        2       23      "#377eb8"
@@ -38,6 +39,7 @@ chr1    55705907        55707516        2       23      "#377eb8"
 chr1    73595641        73603844        1       15			"green"
 chr1    82721748        82724869        1       15      "green"
 chr1    87512436        87514550        1       20      "blue"
+</pre>
 ...
 
 The stripe is the stripe to render the point.  So, for a stripe layout
@@ -48,13 +50,13 @@ The pch and the color are the colors to draw the annotation.
 
 
 The heatmap is specified by a bed file with:
-
+<pre>
 ...
 chr1    20000000        25000000        4351
 chr1    25000000        30000000        4574
 chr1    30000000        35000000        9274
 ... 
-
+</pre>
 
 The 4th column is some value that scales the heatmap.  For now this is
 normalized by chromosome and scaled into 9 possible colors.
