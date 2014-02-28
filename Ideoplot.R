@@ -1,5 +1,6 @@
 library(getopt)
-source("hg19Bands.R")
+
+source("/net/eichler/vol5/home/mchaisso/projects/Ideogram/Ideoplot/hg19Bands.R")
 
 GetBands <- function(genomebands, chrom) {
   i <- which(genomebands$V1 == chrom)
@@ -28,6 +29,10 @@ AddHeatmap <- function(x,y, width, chrBands, heatMap, nColors) {
   y1 <- y+heatMap$V2
   y2 <- y+heatMap$V3
 
+  if (args$topdown == TRUE) {
+    y1 <- yTop - y1
+    y2 <- yTop - y2
+  }
   rect(x1,y1,x2,y2,col=pal[heatMap$V4], border=NA)
 }
 
@@ -42,6 +47,11 @@ DrawChromosome <- function(x,y, width, chrBands) {
     x1 <- allX[2:nPoints]
     y0 <- allY[1:nPoints-1]
     y1 <- allY[2:nPoints]
+
+    if (args$topdown == TRUE) {
+      y0 <- yTop - y0
+      y1 <- yTop - y1
+    }
     segments(x0,y0,x1,y1)
   }
 }
@@ -60,15 +70,37 @@ ToBins <- function(hm,nBins ) {
   return(res)
 }
 
+DrawAnnotation <- function(x, y, s, color) {
+  plotChar <- 0
+  if (args$topdown == TRUE) {
+    y <- yTop - y
+  }
+  points(x, y, pch=as.numeric(s), col=color,cex=0.25)   
+}
+
+DrawAnnotations <- function(x,y, stripeWidths, chrAnnot) {
+  if (dim(chrAnnot)[1] > 0) {
+    
+    tmp <- apply(chrAnnot, 1, function(r) DrawAnnotation(x+ sum(stripeWidths[0:(as.numeric(r[4])-1)]), y+((as.numeric(r[3])-as.numeric(r[2]))/2)+as.numeric(r[2]), r[5], r[6]))
+  }
+}
+
 
 options <- matrix(c("ideobed", "i", 2, "character",
                     "heatmap", "h", 2, "character",
                     "annotate", "a", 2, "character",
-                    "out", "o", 2, "character"), byrow=T, ncol=4)
+                    "out", "o", 2, "character",
+                    "topdown", "r", 2, "integer"), byrow=T, ncol=4)
 
 args <- getopt(options)
 
 bands <- hg19Bands
+
+if (is.null(args$topdown)) {
+  args$topdown <- FALSE
+} else {
+  args$topdown <- TRUE
+}
 
 if (is.null(args$out)) {
   outFileName <- "ideogram.pdf"
@@ -87,7 +119,7 @@ if (is.null(args$ideobed)) {
 
 if (is.null(args$heatmap) == FALSE) {
   hmap <- read.table(args$heatmap,header=F)
-} else {  hmap <- read.table('strs.tab',header=T) }
+}
 
 
 
@@ -109,40 +141,50 @@ yLen <- ceiling(maxLength * 1.1)
 xLen <- colWidth*nCols
 
 chromX <- seq(0,nChrom-1)*colWidth + sum(stripeWidths[1:(chromStripe-1)])
-
-
 bandByChr <- lapply(seq(1,nChrom), function(i) GetByChr(bands, chrNames[i]))
 
-hmByChr <- lapply(seq(1,nChrom), function(i) GetByChr(hmap, chrNames[i]))
-
 nBins <- 9
-for (i in seq(1,nChrom)) {
-  
-  hmByChr[[i]]$V4 <- ToBins(hmByChr[[i]], nBins)
-}
 
 chrLen <- sapply(seq(1,nChrom), function(i) GetMaxChromLength(bandByChr[[i]]))
-
-
 chromY <- rep(0.05*maxLength, nChrom)
 
+#
+# Setup output.
+#
+print(sprintf("opening %s", outFileName))
 pdf(outFileName, width=8,height=4)
 plot(c(), xlim=c(0,xLen), ylim=c(0,yLen), axes=F, xlab="", ylab="")
-tmp <- sapply(seq(1,nChrom), function(i) AddHeatmap(chromX[i], chromY[i], stripeWidths[chromStripe], bandByChr[[i]], hmByChr[[i]], nBins ))
+
+if (args$topdown == TRUE) {
+  yTop <- 1.1*maxLength
+}
+
+#
+# Plot heatmap if one is specified.
+#
+if (is.null(args$heatmap) == FALSE) {
+  hmByChr <- lapply(seq(1,nChrom), function(i) GetByChr(hmap, chrNames[i]))
+
+  for (i in seq(1,nChrom)) {
+  
+    hmByChr[[i]]$V4 <- ToBins(hmByChr[[i]], nBins)
+  }
+
+  tmp <- sapply(seq(1,nChrom), function(i) AddHeatmap(chromX[i],
+                                                      chromY[i],
+                                                      stripeWidths[chromStripe],
+                                                      bandByChr[[i]],
+                                                      hmByChr[[i]],
+                                                      nBins ))
+}
+
+
+#
+# Draw the chromosomes.
+#
+
 tmp <- sapply(seq(1,nChrom), function(i) DrawChromosome(chromX[i], chromY[i], stripeWidths[chromStripe], bandByChr[[i]]))
 
-
-
-DrawAnnotation <- function(x, y, s, color) {
-  plotChar <- 0
-  points(x, y, pch=as.numeric(s), col=color,cex=0.25)   
-}
-
-DrawAnnotations <- function(x,y, stripeWidths, chrAnnot) {
-  if (dim(chrAnnot)[1] > 0) {
-    tmp <- apply(chrAnnot, 1, function(r) DrawAnnotation(x+ sum(stripeWidths[0:(as.numeric(r[4])-1)]), y+((as.numeric(r[3])-as.numeric(r[2]))/2)+as.numeric(r[2]), r[5], r[6]))
-  }
-}
 
 if (is.null(args$annotate) == FALSE) {
   annot <- read.table(args$annotate,header=F)
