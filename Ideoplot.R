@@ -1,6 +1,6 @@
 library(getopt)
 
-source("/net/eichler/vol5/home/mchaisso/projects/Ideogram/Ideoplot/hg19Bands.R")
+source("hg19Bands.R")
 
 GetBands <- function(genomebands, chrom) {
   i <- which(genomebands$V1 == chrom)
