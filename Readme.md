@@ -13,19 +13,46 @@ The ideogram bed file and coordinates are obtaned from ucsc:
 http://genome.ucsc.edu/cgi-bin/hgTables?hgsid=364576305&clade=mammal&org=Human&db=hg19&hgta_group=map&hgta_track=cytoBandIdeo&hgta_table=0&hgta_regionType=genome&position=chrX%3A146991161-146996160&hgta_outputType=selectedFields
 
 The layout geometry is organized in terms of stripes for each
-chromosome.  The current layout is fixed to (5,5,15,10), where there
+chromosome.  The current layout is default at (5,5,15,10), where there
 are two stripes of width 5, one of width 15, and one of 10.  The
 chromosome is drawn in the 3rd stripe (width 15).  Annotations can go
-into any stripe.  The widths of stripes are relative.  Eventually it
-will be possible to change the stripes on the command line, and change
-which stripe contains the chromosomes. 
+into any stripe.  The widths of stripes are relative.
+
+The stripes may be changed using the option -s stripes.txt, where the
+format of stripes.txt is stripe_width stripe_label, with the single
+reserved label "c" to label which stripe to draw the chromosome
+in. The default stripes are described in
+<pre>
+5 a
+5 a
+5 a
+15 c
+10 s
+</pre>
+
+Although here the 'a' and 's' don't mean anything, it is just not 'c'.
+
+
 
 For now drawing of banding is disabled, but that will be done... soon.  
 
 
-There are two ways to annotate an ideogram: annotations, and heatmap.
+There are three ways to annotate an ideogram: rectangles, annotations,
+and a heatmap.
+
+Rectangles are bars drawn roughly the width of the stripes.
+chrom   start   end stripe color
+Example:
+...
+<pre>
+chr1	32665	63507	1	green	0
+chr1	163156	194165	1	green	0
+chr1	731738	740486	1	green	0
+</pre>
+
 The annotations are characters (for now just points, eventually text
 gas well) that are drawn.  Each column is:
+
 
 chrom   start           end        stripe      pch      color
 
@@ -41,6 +68,7 @@ chr1    82721748        82724869        1       15      "green"
 chr1    87512436        87514550        1       20      "blue"
 </pre>
 ...
+
 
 The stripe is the stripe to render the point.  So, for a stripe layout
 of (5,5,15,10), the first 4 points are drawn in the 2nd stripe
