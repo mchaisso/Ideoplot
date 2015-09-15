@@ -1,6 +1,14 @@
 library(getopt)
 
-source("hg19Bands.R")
+ca <- commandArgs(trailingOnly=FALSE)
+sink(stdout(), type="message")
+script.name <- sub("--file=", "", ca[grep("--file=", ca)])
+scriptDir <- dirname(script.name)
+
+hg19BandScript <- paste(scriptDir, "hg19Bands.R", sep="/")
+hg38BandScript <- paste(scriptDir, "hg38Bands.R", sep="/")
+source(hg19BandScript)
+source(hg38BandScript)
 
 GetBands <- function(genomebands, chrom) {
   i <- which(genomebands$V1 == chrom)
@@ -18,7 +26,7 @@ GetBands <- function(genomebands, chrom) {
   return(genomebands[i,])
 }
 
-require(RColorBrewer)
+require(RColorBrewer, quietly=T)
 AddHeatmap <- function(x,y, width, chrBands, heatMap, nColors) {
   pal <- rev(brewer.pal(nColors, "RdBu"))
 
@@ -85,16 +93,55 @@ DrawAnnotations <- function(x,y, stripeWidths, chrAnnot) {
   }
 }
 
+DrawAnnotation <- function(x, y, s, color) {
+  plotChar <- 0
+  if (args$topdown == TRUE) {
+    y <- yTop - y
+  }
+  points(x, y, pch=as.numeric(s), col=color,cex=0.25)   
+}
+
+DrawBar <- function(x,y,w,h,color) {
+  yStart <- y
+  yEnd   <- y+h
+  if (args$topdown == TRUE) {
+    yStart <- yTop - yStart
+    yEnd <- yTop - yEnd
+  }
+  rect(x, yStart, x+w, yEnd, col=color, border=NA);
+}
+
+DrawAllBars <- function(x,y, stripeWidths, chrBars) {
+  if (dim(chrBars)[1] > 0) {
+    tmp <- apply(chrBars, 1, function(r) DrawBar(x+ sum(stripeWidths[0:(as.integer(r[4])-1)]),
+                                                 y+as.integer(r[2]),
+                                                 stripeWidths[as.integer(r[4])]*0.8,
+                                                 as.integer(r[3]) - as.integer(r[2]), r[5]))
+  }
+}
+
 
 options <- matrix(c("ideobed", "i", 2, "character",
                     "heatmap", "h", 2, "character",
                     "annotate", "a", 2, "character",
                     "out", "o", 2, "character",
+                    "stripes", "s", 2, "character",
+                    "bars", "b", 2, "character",
+                    "reference", "f", 2, "character",
                     "topdown", "r", 2, "integer"), byrow=T, ncol=4)
 
 args <- getopt(options)
 
-bands <- hg19Bands
+if (is.null(args$ideobed) == FALSE) {
+  bands <- read.table(args$ideobed)
+} else {
+  if (is.null(args$reference) == TRUE || args$reference == "hg19") {
+    bands <- hg19Bands
+  }else if (args$reference == "hg38") {
+    bands <- hg38Bands
+  }
+}
+  
 
 if (is.null(args$topdown)) {
   args$topdown <- FALSE
@@ -107,13 +154,6 @@ if (is.null(args$out)) {
 } else {
   outFileName <- args$out
 }
-
-if (is.null(args$ideobed)) {
-  bands <- hg19Bands } else {
-  bands <- read.table(args$ideobed)
-}
-
-
 
 
 
@@ -129,12 +169,22 @@ chrLabels <- paste(c(seq(1,22),"X", sep=""))
 nChrom <- length(chrNames)
 maxLength <- GetMaxChromLength(bands)
 
-stripeWidths <- c(5,5,15,10)
+
+if (is.null(args$stripes)) {
+  stripeWidths <- c(5,5,5,10,6)
+  chromStripe <- 4
+  spaceStripe <- 5
+} else {
+  stripeTable <- read.table(args$stripes)
+  stripeWidths <- stripeTable$V1
+  chromStripe <- which(stripeTable$V2 == 'c')[1]
+}
+
 stripesPerCol <- length(stripeWidths)
 colWidth <- sum(stripeWidths)
 
 nCols <- nChrom
-chromStripe <- 3
+
 
 colWidth <- sum(stripeWidths)
 yLen <- ceiling(maxLength * 1.1)
@@ -148,10 +198,11 @@ nBins <- 9
 chrLen <- sapply(seq(1,nChrom), function(i) GetMaxChromLength(bandByChr[[i]]))
 chromY <- rep(0.05*maxLength, nChrom)
 
+
 #
 # Setup output.
 #
-print(sprintf("opening %s", outFileName))
+
 pdf(outFileName, width=8,height=4)
 plot(c(), xlim=c(0,xLen), ylim=c(0,yLen), axes=F, xlab="", ylab="")
 
@@ -166,7 +217,6 @@ if (is.null(args$heatmap) == FALSE) {
   hmByChr <- lapply(seq(1,nChrom), function(i) GetByChr(hmap, chrNames[i]))
 
   for (i in seq(1,nChrom)) {
-  
     hmByChr[[i]]$V4 <- ToBins(hmByChr[[i]], nBins)
   }
 
@@ -193,9 +243,16 @@ if (is.null(args$annotate) == FALSE) {
   annot$V4 <- as.numeric(annot$V4)
 
   annotByChr <- lapply(seq(1,nChrom), function(i) GetByChr(annot, chrNames[i]))
-  
+
   tmp <- sapply(seq(1,nChrom), function(i) DrawAnnotations((i-1)*colWidth, chromY[i], stripeWidths, annotByChr[[i]]))
-  
+ 
+}
+
+if (is.null(args$bars) == FALSE) {
+  bars <- read.table(args$bars, header=F, colClasses=c("character", "numeric", "numeric", "numeric", "character") )
+  barsByChr <- lapply(seq(1,nChrom), function(i) GetByChr(bars, chrNames[i]))
+
+  tmp <- sapply(seq(1,nChrom), function(i) DrawAllBars((i-1)*colWidth, chromY[i], stripeWidths, barsByChr[[i]]))
 }
 
 tmp <- sapply(seq(1,nChrom), function(i) text(chromX[i]+(stripeWidths[chromStripe]/2), 0, chrLabels[i], cex=0.5))

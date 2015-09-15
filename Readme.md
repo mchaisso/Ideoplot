@@ -25,7 +25,7 @@ For now drawing of banding is disabled, but that will be done... soon.
 
 There are two ways to annotate an ideogram: annotations, and heatmap.
 The annotations are characters (for now just points, eventually text
-as well) that are drawn.  Each column is:
+gas well) that are drawn.  Each column is:
 
 chrom   start           end        stripe      pch      color
 
