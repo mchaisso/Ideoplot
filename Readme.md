@@ -2,9 +2,9 @@ Simple ideogram plotting and annotation in R.
 
 Basic usage:
 
-Rscript Ideoplot.R --heatmap hm.bed --annotate annotations.bed --out ideogram.pdf
--or-
-Rscript Ideoplot.R --annotate annotations.bed 
+Rscript Ideoplot.R --heatmap hm.bed --annotate annotations.bed --out ideogram.pdf  
+-or-  
+Rscript Ideoplot.R --annotate annotations.bed  
 
 To swap to a different reference version, use the --ideobed option to
 specifiy an alternative ideogram bed file. 
