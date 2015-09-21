@@ -6,6 +6,19 @@ Rscript Ideoplot.R --heatmap hm.bed --annotate annotations.bed --out ideogram.pd
 -or-  
 Rscript Ideoplot.R --annotate annotations.bed  
 
+Options
+  --ideobed, i      A bed file of reference contig lengths/chromosome names
+  --heatmap, -h     Fill chromosomes with normalized heatmap
+                   (described below)
+  --annotate, -a    Add character annotations.
+  --out, -o         PDF output name.
+  --stripes, -s     Specify a file containing the layout of the
+                  	annotations (description below)
+  --bars, -b        Add track annotations
+  --reference, -f   Either hg19, or hg38
+  --topdown, r      Flag, when set, flips the orientation (P arms
+                  	drawn on top).
+
 To swap to a different reference version, use the --ideobed option to
 specifiy an alternative ideogram bed file. 
 
