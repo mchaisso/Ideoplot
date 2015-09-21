@@ -6,6 +6,7 @@ Rscript Ideoplot.R --heatmap hm.bed --annotate annotations.bed --out ideogram.pd
 -or-  
 Rscript Ideoplot.R --annotate annotations.bed  
 
+<pre>
 Options
   --ideobed, i      A bed file of reference contig lengths/chromosome names
   --heatmap, -h     Fill chromosomes with normalized heatmap
@@ -18,7 +19,7 @@ Options
   --reference, -f   Either hg19, or hg38
   --topdown, r      Flag, when set, flips the orientation (P arms
                   	drawn on top).
-
+</pre>
 To swap to a different reference version, use the --ideobed option to
 specifiy an alternative ideogram bed file. 
 
