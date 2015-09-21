@@ -41,18 +41,52 @@ There are three ways to annotate an ideogram: rectangles, annotations,
 and a heatmap.
 
 Rectangles are bars drawn roughly the width of the stripes.
-chrom   start   end stripe color
+chrom start end stripe color
 Example:
 ...
 <pre>
-chr1	32665	63507	1	green	0
-chr1	163156	194165	1	green	0
-chr1	731738	740486	1	green	0
+chr1	32665	63507	1	green
+chr1	163156	194165	1	green
+chr1	731738	740486	1	green
 </pre>
 
-The annotations are characters (for now just points, eventually text
-gas well) that are drawn.  Each column is:
+You can have Ideoplot try and have fancy coloring of enumerated groups
+by adding an additional column.  Columns with group index 0 are
+rendered with the value in the color column. Group indices greater
+than 0 are assigned a color, hash combination so that each group has a
+unique color, hash.  Right now up to 420 combinations are supported,
+but it's pretty hard to distinguish lots of them so that may change.
 
+
+chrom start end stripe color index
+Example:
+...
+<pre>
+chr1	32665	63507	1	green  0
+chr1	163156	194165	1	green 1
+chr1	731738	740486	1	green 2
+chr4	117223	497282	1	green 1
+</pre>
+
+Finally you can add a strand to the plot with an additional column:
+
+chrom start end stripe color index strand
+Example:
+...
+<pre>
+chr1	32665	63507	1	green  0 0
+chr1	163156	194165	1	green 1 1
+chr1	731738	740486	1	green 2 -1
+chr4	117223	497282	1	green 1 1
+</pre>
+
+-1: ignore strand
+0: forward
+1: reverse
+
+
+The annotations are characters (for now just points, eventually text
+as well) that are drawn.  Each column is:
 
 chrom   start           end        stripe      pch      color
 

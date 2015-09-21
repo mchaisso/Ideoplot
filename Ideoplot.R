@@ -27,6 +27,9 @@ GetBands <- function(genomebands, chrom) {
 }
 
 require(RColorBrewer, quietly=T)
+
+
+
 AddHeatmap <- function(x,y, width, chrBands, heatMap, nColors) {
   pal <- rev(brewer.pal(nColors, "RdBu"))
 
@@ -101,22 +104,110 @@ DrawAnnotation <- function(x, y, s, color) {
   points(x, y, pch=as.numeric(s), col=color,cex=0.25)   
 }
 
-DrawBar <- function(x,y,w,h,color) {
+set1 <- brewer.pal(8,"Set1")
+set1 <- sample(rainbow(10))
+nRectangleColors <- length(set1)
+
+
+DrawDirBar <- function(xp,yp,w,h,dir,color,doShade=FALSE,lineWidth=0.25,d=150,a=0) {
+  arrow <- maxArrow
+  middle=w/2
+  if (h < maxArrow) {
+    arrow <- h;
+  }
+  s=h-arrow
+
+  if (dir==0) {
+    if (doShade==F) {
+      polygon(as.vector(c(xp,xp,xp+middle,xp+w,xp+w)),y=as.vector(c(yp,yp+s,yp+s+arrow,yp+s,yp)), col=color,lwd=lineWidth)
+    } else {
+      polygon(as.vector(c(xp,xp,xp+middle,xp+w,xp+w)),y=as.vector(c(yp,yp+s,yp+s+arrow,yp+s,yp)), col=color,lwd=lineWidth,density=d, angle=a);
+    }
+  } else if (dir == 1) {
+    if (doShade==F) {
+      polygon(as.vector(c(xp,xp+w,xp+w,xp+middle,xp)), y=as.vector(c(yp+h,yp+h,yp+arrow,yp,yp+arrow)), col=color,lwd=lineWidth)
+    } else {
+      polygon(as.vector(c(xp,xp+w,xp+w,xp+middle,xp)), y=as.vector(c(yp+h,yp+h,yp+arrow,yp,yp+arrow)), col=color,lwd=lineWidth,density=d, angle=a);
+    }
+  }
+}
+
+
+DrawShape <- function(x,y,w,h,dir,color,doShade=FALSE,lineWidth=0.25,d=150,a=0) {
+
+  if (dir == -1) {
+    if (doShade==F) {
+      rect(x, y, x+w, y+h, col=color, lwd=lineWidth);
+    } else {
+      rect(x, y, x+w, y+h, col=color, lwd=lineWidth, density=d, angle=a);
+    }
+  } else {
+    DrawDirBar(x,y,w,h,dir, color, doShade, lineWidth, d, a);
+  }
+}
+DrawBar <- function(x,y,w,h,color,d=0, strand=-1) {
   yStart <- y
   yEnd   <- y+h
   if (args$topdown == TRUE) {
     yStart <- yTop - yStart
     yEnd <- yTop - yEnd
   }
-  rect(x, yStart, x+w, yEnd, col=color, border=NA);
+  angles = c(0,90,45,135,60,105,120)
+  lineWidth=0.25
+  dens=150
+  if (d < length(set1)) {
+    if (d > 0) {
+      color=set1[d]
+    } else {
+      color="gray";
+    }
+    DrawShape(x,yStart, w, h, strand, color, F, lineWidth)
+    #rect(x, yStart, x+w, yEnd, col=color,lwd=lineWidth);      
+  } else if (d < length(angles)*length(set1)) {
+    color=set1[d%%length(set1)+1]
+    DrawShape(x,yStart, w, h, strand, color, F, lineWidth)
+#    rect(x, yStart, x+w, yEnd, col=color, lwd=0.25);
+    a=angles[(d%%length(angles))+1]
+    DrawShape(x,yStart, w, h, strand, "black", T, lineWidth, dens, a)
+#    rect(x, yStart, x+w, yEnd, col="black", lwd=0.25, density=150, angle=a);
+    
+  } else if (d < length(angles)*length(angles-1)*length(set1)) {
+    color=set1[(d%%length(set1))+1]
+    DrawShape(x,yStart, w, h, strand, color, F, lineWidth)    
+#    rect(x, yStart, x+w, yEnd, col=color, lwd=0.25);
+    ai1=(d%%length(angles))+1
+    
+    a1=angles[ai1]
+    ai2 <- (d+1)%%(length(angles)+1-ai1)+1
+    a2=angles[ai2]
+
+    DrawShape(x,yStart, w, h, strand, "black", T, lineWidth, dens, a1)    
+#    rect(x, yStart, x+w, yEnd, col="black", lwd=0.25, density=150, angle=a1);
+    DrawShape(x,yStart, w, h, strand, "black", T, lineWidth, dens, a2)        
+#    rect(x, yStart, x+w, yEnd, col="black", lwd=0.25, density=150, angle=a2);    
+  }    
 }
+
+
 
 DrawAllBars <- function(x,y, stripeWidths, chrBars) {
   if (dim(chrBars)[1] > 0) {
-    tmp <- apply(chrBars, 1, function(r) DrawBar(x+ sum(stripeWidths[0:(as.integer(r[4])-1)]),
-                                                 y+as.integer(r[2]),
-                                                 stripeWidths[as.integer(r[4])]*0.8,
-                                                 as.integer(r[3]) - as.integer(r[2]), r[5]))
+    if (dim(chrBars)[2] > 5) {
+      d <- as.integer(chrBars$V6);
+    } else {
+      d <- rep(0,length(chrBars$V1));
+    }
+
+    if (dim(chrBars)[2] > 6) {
+      dirs <- as.integer(chrBars$V7);
+    } else {
+      dirs <- rep(-1,length(chrBars$V1));
+    }
+
+    tmp <- sapply(seq(1,length(chrBars$V1)), function(r) DrawBar(x+ sum(stripeWidths[0:(as.integer(chrBars$V4[r])-1)]),
+                                                                y+as.integer(chrBars$V2[r]),
+                                                                stripeWidths[as.integer(chrBars$V4[r])]*0.7,
+                                                                as.integer(chrBars$V3[r]) - as.integer(chrBars$V2[r]), chrBars$V5[r], d[r], dirs[r]))
   }
 }
 
@@ -190,6 +281,8 @@ colWidth <- sum(stripeWidths)
 yLen <- ceiling(maxLength * 1.1)
 xLen <- colWidth*nCols
 
+maxArrow=yLen*0.005
+
 chromX <- seq(0,nChrom-1)*colWidth + sum(stripeWidths[1:(chromStripe-1)])
 bandByChr <- lapply(seq(1,nChrom), function(i) GetByChr(bands, chrNames[i]))
 
@@ -249,9 +342,9 @@ if (is.null(args$annotate) == FALSE) {
 }
 
 if (is.null(args$bars) == FALSE) {
-  bars <- read.table(args$bars, header=F, colClasses=c("character", "numeric", "numeric", "numeric", "character") )
+#  bars <- read.table(args$bars, header=F, colClasses=c("character", "numeric", "numeric", "numeric", "character") )
+  bars <- read.table(args$bars)
   barsByChr <- lapply(seq(1,nChrom), function(i) GetByChr(bars, chrNames[i]))
-
   tmp <- sapply(seq(1,nChrom), function(i) DrawAllBars((i-1)*colWidth, chromY[i], stripeWidths, barsByChr[[i]]))
 }
 
@@ -263,8 +356,3 @@ axis(2, at=c(1E8+chromY[1], 1E8+chromY[1]+1E8), labels=c("", ""),cex.axis=0.5, c
 mtext("100Mbp", side=2,line=0, at=1.5E8+chromY[1], cex=0.5)
 warnings()
 dev.off()
-
-
-
-
-
